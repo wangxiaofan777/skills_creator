@@ -22,6 +22,7 @@ skills_creator/
 │   └── codex/                  AGENTS.md(开放标准)
 ├── sonar-guard/
 │   ├── README.md               该 Skill 的说明文档
+│   ├── scripts/                install_cursor.py / uninstall_cursor.py
 │   ├── claude-code/            Claude Code 原生 Skill(完整功能,含 scripts/)
 │   ├── cursor/                 Cursor .mdc 规则(离线审查部分)
 │   └── codex/                  AGENTS.md(离线审查部分)
