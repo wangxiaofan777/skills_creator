@@ -7,7 +7,7 @@
 | Skill | 一句话定位 | 语言/框架范围 | 平台覆盖 | 详细文档 |
 |---|---|---|---|---|
 | [senior-code-style](senior-code-style/) | 以资深(10年+)工程师的风格写/重构代码,做减法、消除过度抽象与样板 | Java 后端 + React/Vue/TS 前端 | ✅ Claude Code ✅ Cursor ✅ Codex | [README](senior-code-style/README.md) |
-| [sonar-guard](sonar-guard/) | 开发时 + git 提交时两阶段对照 SonarQube 规范检查,带修复风险评估 | Java / Python / JS·TS / Go | ✅ Claude Code ✅ Cursor ✅ Codex | [README](sonar-guard/README.md) |
+| [sonar-guard](sonar-guard/) | 开发时 + git 提交时对照 SonarQube 检查；B1 全项目 issue + 增量扫描 + 修复风险评估 | Java / Python / JS·TS / Go | ✅ Claude Code ✅ Cursor ✅ Codex | [README](sonar-guard/README.md) |
 | [link-works-whiten-automation](link-works-whiten-automation/) | Link Works「洗白 AI」批量与 pre-commit 自动化 Agent 指引 | 任意含 `scripts/link-works-*` 的 git 仓库 | ✅ Claude Code ✅ Cursor ✅ Codex | [README](link-works-whiten-automation/README.md) |
 
 ## 目录结构
@@ -22,10 +22,11 @@ skills_creator/
 │   └── codex/                  AGENTS.md(开放标准)
 ├── sonar-guard/
 │   ├── README.md               该 Skill 的说明文档
-│   ├── scripts/                install_cursor.py / uninstall_cursor.py
-│   ├── claude-code/            Claude Code 原生 Skill(完整功能,含 scripts/)
-│   ├── cursor/                 Cursor .mdc 规则(离线审查部分)
-│   └── codex/                  AGENTS.md(离线审查部分)
+│   ├── references/workflow.md  三端共享扫描工作流
+│   ├── scripts/                sonar_api / scan / install.py / uninstall.py
+│   ├── claude-code/            Claude Code 原生 Skill
+│   ├── cursor/                 Cursor .mdc 规则
+│   └── codex/                  AGENTS.md(开放标准)
 └── link-works-whiten-automation/
     ├── README.md               该 Skill 的说明文档
     ├── claude-code/            Claude Code SKILL.md

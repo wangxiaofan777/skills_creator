@@ -1,10 +1,4 @@
-# sonar-guard-cursor-install Specification
-
-## Purpose
-
-Cross-platform one-click install and uninstall of sonar-guard for Cursor: user-level rules, per-repo `.sonarguard.json`, and optional pre-commit hooks, using Python 3 stdlib only, with minimal-configuration documentation.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Python one-click install for Cursor
 
@@ -42,58 +36,15 @@ The package SHALL provide Cursor installation via `sonar-guard/scripts/install.p
 - **THEN** the installer writes a clear error to stderr
 - **AND** exits with a non-zero code
 
-### Requirement: Python one-click uninstall for Cursor
-
-The package SHALL provide `sonar-guard/scripts/uninstall_cursor.py` that reverses the Cursor install and optional repository hook setup.
-
-#### Scenario: Uninstall rules and hook
-
-- **WHEN** the user runs `python sonar-guard/scripts/uninstall_cursor.py --repo <git-repo>`
-- **THEN** sonar-guard rule files installed via the manifest are removed from `{userHome}/.cursor/rules/`
-- **AND** the `sonar-guard` block is removed from `<git-repo>/.git/hooks/pre-commit` if present
-- **AND** `<git-repo>/.git/hooks/sonarguard/` is deleted
-- **AND** `.sonarguard.json` is kept unless `--purge-config` is passed
-- **AND** the script exits with code 0
-
-### Requirement: Install manifest for clean uninstall
-
-The installer SHALL record installed rule file names and target directory in `{userHome}/.config/sonarguard/cursor-install.json` and the uninstaller SHALL use that manifest when removing rules.
-
-#### Scenario: Manifest written on install
-
-- **WHEN** install completes successfully
-- **THEN** `cursor-install.json` lists the six rule basenames and `rulesDir`
-- **AND** includes an ISO-8601 `installedAt` timestamp
-
-#### Scenario: Uninstall without manifest falls back to defaults
-
-- **WHEN** `cursor-install.json` is missing
-- **THEN** the uninstaller removes the six known default rule filenames from `{userHome}/.cursor/rules/`
-
 ### Requirement: Pre-commit hook is non-destructive
 
 The installer SHALL append a marked `sonar-guard` snippet to an existing `pre-commit` hook rather than replacing unrelated hook logic.
-
-#### Scenario: Append to existing pre-commit
-
-- **WHEN** `<git-repo>/.git/hooks/pre-commit` exists and does not yet contain `sonar-guard`
-- **THEN** the installer appends a block delimited by `# >>> sonar-guard >>>` and `# <<< sonar-guard <<<`
-- **AND** preserves existing hook content
 
 #### Scenario: Refresh scripts when hook already present
 
 - **WHEN** `pre-commit` already contains a `sonar-guard` block
 - **THEN** the installer updates `check_staged.py` and `sonar_api.py` under `hooks/sonarguard/` from `sonar-guard/scripts/`
 - **AND** replaces the marked block with the current snippet if its text changed
-
-### Requirement: No Node.js install scripts
-
-The package SHALL NOT ship Node.js-based Cursor install scripts; `install_cursor.py` and `uninstall_cursor.py` are thin wrappers over the unified Python installers.
-
-#### Scenario: Node installers absent
-
-- **WHEN** a consumer looks under `sonar-guard/scripts/` for install automation
-- **THEN** `install.py`, `uninstall.py`, `install_cursor.py`, and `uninstall_cursor.py` are provided (plus `lib/install_lib.py`)
 
 ### Requirement: Minimal-configuration documentation
 
@@ -105,13 +56,9 @@ The package SHALL NOT ship Node.js-based Cursor install scripts; `install_cursor
 - **THEN** install commands cover all three platforms via `install.py --platform ...`
 - **AND** a table lists the two configuration items (token + project) as required for server mode
 - **AND** documents B1 full-project scan via `issues --all` or `scan.py --scope full`
-- **AND** includes an execution-context section for where to run install vs scan
 - **AND** paths are relative to the repository root or use `~` (no machine-specific absolute paths)
 
-#### Scenario: Root README index
-
-- **WHEN** a user reads the root `skills_creator/README.md` directory structure
-- **THEN** `sonar-guard/scripts/install.py` is listed under the sonar-guard package
+## ADDED Requirements
 
 ### Requirement: Cursor rules support server mode
 

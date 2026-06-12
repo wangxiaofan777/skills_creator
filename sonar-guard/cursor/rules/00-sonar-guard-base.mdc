@@ -5,22 +5,28 @@ alwaysApply: true
 
 # Sonar Guard · 基础规则
 
-仓库根目录存在 `.sonarguard.json` 时生效:**任何代码编写/修改完成后,主动对照 Sonar 规范审查本次变更**,不要等用户提醒——"上线前 CI 扫描才暴露问题"的根因就是平时没人主动查。
+仓库根目录存在 `.sonarguard.json` 时生效:**任何代码编写/修改完成后,主动对照 Sonar 规范审查本次变更**,不要等用户提醒。
+
+完整工作流见 `sonar-guard/references/workflow.md`；**在哪执行、`--repo` 指哪个仓库** 见 `sonar-guard/README.md` §在哪执行。
 
 ## 工作流
 
-1. 确定变更范围:本次会话新建/修改的文件;用户要求全面检查时用 `git diff --name-only` + `git status`。
-2. 按变更文件的语言加载对应规则卡片(Java / Python / JS·TS / Go),给修复建议前先读"修复风险评估"卡片定级。
-3. 逐文件对照规则审查,输出固定结构报告:
+1. **探测状态**（`--repo` = 当前打开的 git 项目根）:
+   ```bash
+   python sonar-guard/scripts/sonar_api.py status --repo .
+   ```
+2. **服务器模式 (`project_state: ok`)**:
+   - 全项目(B1): 优先 `python sonar-guard/scripts/scan.py --repo <项目根> --scope full`；若仅有 hook 则用 `.git/hooks/sonarguard/sonar_api.py issues --repo . --all`
+   - 增量/变更文件: `python sonar-guard/scripts/scan.py --repo . --scope files --files <paths>`
+3. **离线模式** (`not_found`/`no_auth`/`unreachable`): 按语言规则卡片审查,报告注明离线原因。
+4. 按变更语言加载规则卡片(Java / Python / JS·TS / Go)与「修复风险评估」卡片。
+5. 输出报告(见 workflow.md 截断规则):
 
 ```markdown
-## Sonar 合规检查报告(模式:离线)
+## Sonar 合规检查报告(模式: 服务器 / 离线)
 
-### 本次变更引入的问题(N 个)
+### 汇总 / 问题表
 | # | 文件:行 | 规则 | 严重级 | 问题 | 修复风险 |
-
-#### 问题 1:<标题>(<规则号>)
-- 为什么是问题 / 怎么修(给具体代码)/ 会不会改出问题(风险等级+理由+验证建议)
 
 ### 建议
 - 🟢 可直接修:…  🟡 修后需跑测试:…  🔴 需用户确认再动:…
@@ -29,12 +35,12 @@ alwaysApply: true
 ## 修复执行原则
 
 - 🟢 零/低风险:直接修,修后简述改了什么。
-- 🟡 中风险:修前确认测试覆盖,修后跑相关测试,写明行为可能的变化点。
+- 🟡 中风险:修前确认测试覆盖,修后跑相关测试。
 - 🔴 高风险:**先向用户说明行为将如何变化,确认后再改**;单独提交。
-- 多个修复按风险分组提交,不混在一个大改动里;只做规则要求的最小变更,不"顺手优化"。
+- 只做规则要求的最小变更,不"顺手优化"。
 
 ## 注意
 
-- 本规则集是离线高频规则子集,不等价于完整 Sonar 扫描,最终以 CI 上的扫描为准。
-- Sonar 服务器查询与 pre-commit 钩子由 Claude Code 版 sonar-guard(scripts/)提供;Cursor 下需要服务器存量 issue 时,请用户从 Sonar 页面导出或粘贴。
-- token 等凭证永远不写入任何会提交的文件,也不在报告中回显。
+- B1 全项目 issue 来自 Sonar 上次扫描结果;新写未进 CI 的代码不会出现在 `--all` 结果中。
+- 离线规则子集不等价于完整 Sonar 扫描,最终以 CI 为准。
+- token 等凭证永远不写入会提交的文件,也不在报告中回显。

@@ -52,13 +52,13 @@ description: 在开发过程中和 git 提交时对照 SonarQube 规范检查代
 1. 询问/探测 Sonar 服务器地址和 projectKey(先看 `sonar-project.properties`、CI 配置文件如 `.gitlab-ci.yml`、`Jenkinsfile` 里有没有现成的)。
 2. 询问钩子模式偏好,生成 `.sonarguard.json`。
 3. 提醒用户设置 `SONAR_TOKEN`(Sonar 页面 My Account → Security → Generate Token),不要替用户填 token。
-4. 运行 `bash scripts/install_hook.sh <仓库路径>` 安装 pre-commit 钩子。
-5. 运行 `python3 scripts/sonar_api.py status --repo <仓库路径>` 验证连通性和权限,把结果告诉用户。
+4. 运行 `python sonar-guard/scripts/install.py --platform all --repo <仓库路径>` 安装(或 `--platform cursor|claude|codex`)。
+5. 运行 `python sonar-guard/scripts/sonar_api.py status --repo <仓库路径>` 验证连通性和权限,把结果告诉用户。
 
 ## 1. 项目状态探测(每次检查的第一步)
 
 ```bash
-python3 scripts/sonar_api.py status --repo <仓库路径>
+python sonar-guard/scripts/sonar_api.py status --repo <仓库路径>
 ```
 
 返回 JSON,`project_state` 有四种,决定后续走哪条路:
@@ -78,16 +78,19 @@ python3 scripts/sonar_api.py status --repo <仓库路径>
 
 步骤:
 
-1. **确定变更范围**:本次会话新建/修改的文件;用户要求全面检查时用 `git diff --name-only` + `git status` 找出所有变更文件。
-2. **探测项目状态**(见上节)。
+1. **确定范围**: 本次变更文件; **全项目扫描(B1)** 时用户要「扫全仓库 sonar 问题」→ 见下 `--scope full`。
+2. **探测项目状态**(见上节)。共享流程见 `references/workflow.md`(skills_creator 内 `sonar-guard/references/workflow.md`)。
 3. **服务器模式下拉取数据**:
 
    ```bash
-   # 项目质量配置中的活跃规则(按变更文件涉及的语言过滤)
-   python3 scripts/sonar_api.py rules --repo <仓库路径> --langs java,py,js,ts,go
+   # B1 全项目未解决 issue(Sonar 服务器存量)
+   python sonar-guard/scripts/scan.py --repo <仓库路径> --scope full
 
-   # 变更文件在服务器上的现存未解决 issue(存量问题)
-   python3 scripts/sonar_api.py issues --repo <仓库路径> --files src/a/Foo.java src/b/bar.ts
+   # 增量: 指定文件的存量 issue
+   python sonar-guard/scripts/scan.py --repo <仓库路径> --scope files --files src/a/Foo.java
+
+   # 可选: 活跃规则(审查新写法时)
+   python sonar-guard/scripts/sonar_api.py rules --repo <仓库路径> --langs java,py,js,ts,go
    ```
 
 4. **读取对应语言的规则参考**(无论哪种模式都要读——服务器规则列表只有规则名,修复方法和风险评估在参考文件里):
@@ -126,14 +129,16 @@ python3 scripts/sonar_api.py status --repo <仓库路径>
    - 🟡 中风险:修复前确认该处有测试覆盖;修复后建议运行相关测试;报告里写清楚行为可能的变化点。
    - 🔴 高风险:**先问用户**,说明可能的行为变化,得到确认才改。
    - 多个修复按风险分组提交,不要混在一个大改动里,方便回滚。
-   - 不确定某条服务器规则的修法时,用 `python3 scripts/sonar_api.py rule --repo <仓库路径> --key java:S2095` 拉取官方规则描述。
+   - 不确定某条服务器规则的修法时,用 `python sonar-guard/scripts/sonar_api.py rule --repo <仓库路径> --key java:S2095` 拉取官方规则描述。
+   - **B1 全项目报告**: 汇总表必全; BLOCKER/CRITICAL 全列; MAJOR 最多 20 条; MINOR/INFO 仅计数(见 workflow.md)。
 
 ## 3. 提交阶段检查(pre-commit 钩子)
 
 安装(每个仓库一次):
 
 ```bash
-bash scripts/install_hook.sh /path/to/repo
+python sonar-guard/scripts/install.py --platform all --repo /path/to/repo
+# 或仅钩子: bash claude-code/sonar-guard/scripts/install_hook.sh /path/to/repo
 ```
 
 该脚本把 `check_staged.py` 和 `sonar_api.py` 复制到 `.git/hooks/sonarguard/`(自包含,之后不依赖技能目录),并写入 `pre-commit` 钩子(若已有 pre-commit,追加调用而不是覆盖)。
@@ -150,13 +155,14 @@ bash scripts/install_hook.sh /path/to/repo
 手动模拟一次钩子检查(不真正提交):
 
 ```bash
-python3 scripts/check_staged.py --repo /path/to/repo
+python sonar-guard/scripts/scan.py --repo /path/to/repo --scope staged
 ```
 
 ## 4. 用户常见问法 → 动作映射
 
 | 用户说 | 做什么 |
 |---|---|
+| "扫全仓库/全项目 sonar 问题" | B1: `scan.py --scope full` → 汇总报告(截断规则见 workflow.md) |
 | "帮我看看这段代码有没有 sonar 问题" | 第 2 节流程,范围=指定代码 |
 | "把这些 sonar 问题修了" | 拉 issue → 按风险分组 → 🟢🟡直接修,🔴先确认 |
 | "这个修复会不会把功能改坏" | 读 fix-risk-guide,给风险等级+理由+验证方案 |
