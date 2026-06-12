@@ -1,0 +1,47 @@
+---
+description: 编写或审查 Java 代码、检查 Java 的 Sonar 合规问题时使用。
+alwaysApply: false
+---
+
+# Java 高频 Sonar 规则
+
+格式:规则 | 问题与修法 | 修复风险(参照修复风险评估卡片)。
+
+## BLOCKER / CRITICAL
+
+| 规则 | 问题与修法 | 风险 |
+|---|---|---|
+| S2095 | 资源(流/连接/Statement)未关闭 → try-with-resources | 🟡 |
+| S4973 | 字符串/包装类型 `==` 比较 → `equals()` / `Objects.equals()` | 🔴 比较语义真正生效 |
+| S2068 | 硬编码密码/密钥 → 配置中心/环境变量 | 🟡 需同步部署配置 |
+| S2259 | 可能空指针解引用 → 判空/Optional | 🔴 崩溃路径变跳过路径 |
+| S2486 | 空 catch 吞异常 → 至少记日志;改抛出要问用户 | 🟢 加日志 / 🔴 改抛出 |
+| S2077 | SQL 拼接(注入)→ PreparedStatement / MyBatis `#{}` | 🔴 动态表名/排序列需白名单 |
+| S5852 | ReDoS 正则 → 重写消除嵌套量词,双向验证 | 🔴 |
+| S1860 | 对 String/包装类型加锁 → 专用 `private final Object lock` | 🔴 并发行为变化 |
+
+## MAJOR
+
+| 规则 | 问题与修法 | 风险 |
+|---|---|---|
+| S106 | System.out/err → slf4j 日志 | 🟡 stdout 有无消费方 |
+| S1148 | printStackTrace → `log.error("...", e)` | 🟢 |
+| S3776 | 认知复杂度过高 → 提取私有方法、卫语句早返回 | 🟢 纯搬运 |
+| S1192 | 重复字符串字面量(≥3 次)→ 提常量 | 🟢 |
+| S107 | 参数过多 → 参数对象 | 🟡 调用方同步改 |
+| S1172/S1481/S1068 | 未使用参数/变量/字段 → 删(接口实现的参数、反射/注入成员除外) | 🟢/🟡 |
+| S112 | 抛泛化异常 → 定义业务异常 | 🟡 上游 catch 范围 |
+| S2629 | 日志字符串拼接 → 占位符 `log.info("x={}", x)` | 🟢 |
+| S2142 | InterruptedException 被吞 → catch 后 `Thread.currentThread().interrupt()` | 🟡 |
+| S899 | 忽略返回值(File.delete 等)→ 检查并处理 | 🔴 失败分支是新行为 |
+| S5361 | replaceAll 用于普通字符串 → replace | 🟡 |
+
+## MINOR 常见
+
+工具类加私有构造(S1118)、删注释代码(S125)、TODO 转 issue(S1135)、`if-else` 返回布尔直接 return 条件(S1126)、匿名类改 lambda(S1604,内部用 this 时 🟡)——均 🟢。
+
+## 特别注意
+
+- Spring/MyBatis:`@Autowired` 字段、`@Value`、Mapper 接口方法即使"未被直接调用"也不能删。
+- 实体/DTO 的 getter/setter 可能被 Jackson/MyBatis 反射使用,删前全局搜索。
+- `// NOSONAR` / `@SuppressWarnings("java:Sxxxx")` 可豁免,但需团队规范允许并注明理由。

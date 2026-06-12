@@ -1,0 +1,39 @@
+# Guava 习惯
+
+**核心定位**:补 JDK 集合/工具的空缺。**但凡 JDK 已有的,就别用 Guava**——这是用 Guava 的人最容易犯的过度依赖。
+
+## 习惯规则
+
+- 不可变集合(常量、防御性返回):`ImmutableList.of()` / `ImmutableMap.of()`,胜过 `Collections.unmodifiableList(new ArrayList<>())`。
+- 分批处理:`Lists.partition(list, 1000)`——批量写库/调外部接口分页提交的利器(尤其 TiDB 分批)。
+- 多值/双向/二维结构:用 `Multimap` / `BiMap` / `Table`,别手搓 `Map<K, List<V>>` 或两个 map 互维护。
+- 集合运算:`Sets.difference/intersection/union`。
+- 建索引:`Maps.uniqueIndex(list, Foo::getId)`。
+- 字符串:`Joiner` / `Splitter` 处理复杂拼接/切分(带 null 处理、trim)。
+- 本地缓存:`CacheBuilder`——但**新项目优先 Caffeine**(Guava Cache 的现代继任者,更快;见 caching 卡片)。
+- 前置校验:`Preconditions.checkArgument/checkNotNull`(与 Spring `Assert`、`Objects.requireNonNull` 同类,项目里选一种统一用)。
+
+## 对照
+
+```java
+// ❌ 手写分批
+for (int i = 0; i < list.size(); i += 1000) {
+    List<T> batch = list.subList(i, Math.min(i + 1000, list.size()));
+    mapper.saveBatch(batch);
+}
+
+// ✅ 语义清晰
+for (List<T> batch : Lists.partition(list, 1000)) {
+    service.saveBatch(batch);
+}
+```
+
+## 坑(别用 Guava 干这些)
+
+```java
+// ❌ JDK 9+ 已原生支持,无需 Guava
+ImmutableList.of("a", "b");      // → List.of("a", "b")
+Joiner.on(",").join(list);       // → String.join(",", list)
+Lists.newArrayList();            // → new ArrayList<>()
+```
+能用 `List.of` / `Map.of` / `String.join` / `Stream` 解决的,一律用 JDK,不引 Guava API。

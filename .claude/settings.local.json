@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory\\('D:\\\\skills_creator\\\\sonar-guard\\\\sonar-guard.skill', 'D:\\\\skills_creator\\\\sonar-guard\\\\claude-code'\\) && Get-ChildItem -Recurse D:\\\\skills_creator\\\\sonar-guard\\\\claude-code | Select-Object FullName, Length)"
+    ]
+  }
+}

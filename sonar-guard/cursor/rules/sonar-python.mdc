@@ -1,0 +1,41 @@
+---
+description: 编写或审查 Python 代码、检查 Python 的 Sonar 合规问题时使用。
+alwaysApply: false
+---
+
+# Python 高频 Sonar 规则
+
+## BLOCKER / CRITICAL
+
+| 规则 | 问题与修法 | 风险 |
+|---|---|---|
+| S5754 | 裸 `except:` / `except BaseException`(吞 KeyboardInterrupt)→ 至少 `except Exception` + 日志 | 🟡 |
+| S2068 | 硬编码密码/密钥 → 环境变量/配置 | 🟡 |
+| S5445 | 不安全临时文件(mktemp)→ tempfile.NamedTemporaryFile/mkstemp | 🟡 |
+| S4830 | 关闭 SSL 校验(verify=False)→ 恢复校验或配内部 CA | 🔴 自签证书联调需协调 |
+| S2077 | SQL 拼接 → 参数化查询 | 🔴 动态表名/列需白名单 |
+| S1716 | break/continue 在 finally → 移出 | 🔴 异常吞噬行为变化 |
+| S930 | 调用与签名不匹配 → 核对意图 | 🔴 |
+
+## MAJOR
+
+| 规则 | 问题与修法 | 风险 |
+|---|---|---|
+| S1481 | 未使用局部变量 → 删或改 `_` | 🟢 |
+| S3776 | 认知复杂度过高 → 提取函数、提前 return | 🟢 |
+| S107 | 参数过多 → dataclass/字典封装 | 🟡 调用方同步改 |
+| S5806 | 遮蔽内建名(list/dict/id 作变量名)→ 重命名 | 🟢 |
+| S5828 | open() 缺 encoding → 显式 `encoding="utf-8"` | 🟡 跨平台默认编码变(通常是修复) |
+| S6660 | `== None` → `is None` | 🟢 自定义 `__eq__` 的类 🟡 |
+| S3923 | if/else 分支相同 → 笔误,确认意图 | 🔴 |
+| S1763 | return 后死代码 → 删 | 🟢 |
+| S5717 | 可变默认参数 `def f(x=[])` → `None` 哨兵 | 🟡 若故意利用共享默认值则行为变 |
+
+## MINOR 常见
+
+删注释代码(S125)、重复字符串提常量(S1192)、print 调试残留改 logging(stdout 有无消费方 🟡)、可合并嵌套 if(S1066)——其余均 🟢。
+
+## 特别注意
+
+- "未使用"误判:pytest fixture、Django signal、装饰器注册的函数看似未引用,删前全局搜索。
+- 命名重命名 🟢,但公开 API 重命名是 🔴。

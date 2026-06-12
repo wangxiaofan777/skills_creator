@@ -1,0 +1,30 @@
+---
+description: 项目使用 Hutool 工具库、编写 Java 代码时使用。
+alwaysApply: false
+---
+
+# Hutool 习惯
+
+**核心定位**:大而全的国产工具库,开发期很省事。风险是它与 Guava / commons-lang3 / Spring 工具大量重叠——**全用容易"三套工具混搭"**。
+
+## 习惯规则
+
+- 常用:`StrUtil`、`CollUtil`、`MapUtil`、`DateUtil` / `LocalDateTimeUtil`、`Convert`、`Validator`、`IdUtil`(雪花/UUID)、`NumberUtil`。
+- **一个项目里选定一套工具库统一用**(Hutool 或 Guava 或 Spring `StringUtils`),别同一类操作三种写法混着来,后人读着累。
+- 能用 JDK 原生(`String.isBlank`、`List.of`、`String.join`)的就别绕 Hutool。
+
+## 对照
+
+```java
+// ✅ 雪花/分布式 ID(TiDB 高并发写,避免连续自增热点时有用)
+long id = IdUtil.getSnowflakeNextId();
+
+// ✅ 集合判空,语义清楚
+if (CollUtil.isNotEmpty(orders)) { ... }
+```
+
+## 坑
+
+- `BeanUtil.copyProperties` 同样走反射,**热点路径(高频接口、大批量循环)别用**,该上 MapStruct。
+- Hutool 版本间 API 有过调整,升级时留意行为变化。
+- 它很"全",但全不等于该用——能用更轻量/更标准的方案时优先,别因为"Hutool 有"就拿它当默认锤子。

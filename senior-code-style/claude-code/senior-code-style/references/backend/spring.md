@@ -1,0 +1,55 @@
+# Spring Boot 习惯
+
+**核心定位**:框架替你管对象生命周期、事务、配置、异常。顺着它的习惯写,样板自然消失。
+
+## 依赖注入
+
+- 构造器注入 + `final`(配 Lombok `@RequiredArgsConstructor`)。**禁止字段 `@Autowired`**:不可测、易循环依赖、隐藏依赖。
+
+```java
+// ❌
+@Service class OrderService { @Autowired OrderMapper mapper; }
+
+// ✅
+@Service @RequiredArgsConstructor
+class OrderService { private final OrderMapper mapper; }
+```
+
+## 配置
+
+- 一组相关配置用 `@ConfigurationProperties` 绑成对象,别满屏散落 `@Value`。
+
+## 事务
+
+- `@Transactional` 加在 **Service** 方法,理解传播行为;纯查询加 `readOnly = true`。
+- **self-invocation 陷阱**:类内 A 方法直接调本类 B 方法,B 上的 `@Transactional`/`@Cacheable` **不生效**(没走代理)。需要时拆到另一个 bean,或注入自身代理。
+- 事务里别夹远程调用/长 IO,避免长事务(TiDB 下尤其要短事务)。
+
+## 异常处理(消灭遍地 try-catch)
+
+- 定义带错误码的 `BizException`,业务校验失败直接 `throw`,**不在调用处 catch 再转**。
+- 一个 `@RestControllerAdvice` 全局兜底:`BizException`、参数校验异常、未知异常分别映射成统一 `Result`。
+- 只在"要对异常做点什么"(降级/补偿/重试)时才 try-catch;catch 了只打印 = 没 catch。
+
+```java
+// ❌ 每个方法 try-catch + 手拼错误响应
+public Result<Void> pay(...) {
+    try { if (amount.signum() <= 0) return Result.error("金额非法"); ... }
+    catch (Exception e) { log.error("err", e); return Result.error("系统异常"); }
+}
+
+// ✅ 守卫语句 + 抛业务异常,响应交给全局 advice
+public void pay(...) {
+    Assert.isTrue(amount.signum() > 0, () -> new BizException("AMOUNT_INVALID"));
+    ...
+}
+```
+
+## 校验
+
+- 入参校验用 Bean Validation(`@Valid` + `jakarta.validation` 注解 `@NotNull/@Size/@Email`),别在方法体写一堆 if 判空。
+
+## 其他
+
+- DTO/VO 用 `record`(Java 17+)省样板;对外接口不直接暴露 Entity。
+- 包按业务分(`order/`、`user/`),不按技术分(所有 controller 堆一包)。
