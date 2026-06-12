@@ -14,14 +14,15 @@ Documentation requirements for where to run install vs scan commands, `--repo` s
 
 - **WHEN** a user opens `sonar-guard/README.md` looking for `scan.py --scope full`
 - **THEN** they find a section that states `--repo` is the git repo whose `.sonarguard.json` is used
-- **AND** examples show running `scan.py` from `<skills_creator>` with `--repo` pointing to the target project
+- **AND** the primary example shows `python .sonarguard/scan.py --repo . --scope full` from an installed business repository
+- **AND** examples show running `scan.py` from `<skills_creator>` with `--repo` pointing to the target project when install has not been run
 - **AND** an example shows `python .git/hooks/sonarguard/sonar_api.py issues --repo . --all` inside an installed business repo
 
 #### Scenario: Install execution context is distinct from scan
 
 - **WHEN** a user reads the install section and the execution-context section
-- **THEN** install commands are documented as run from `<skills_creator>` root
-- **AND** scan commands clarify that the script lives under `sonar-guard/scripts/` while `--repo` may refer to another repository
+- **THEN** install commands are documented as run from `<skills_creator>` or via bootstrap/setup-env without hardcoded drive paths
+- **AND** scan commands clarify that after install, scripts live under `.sonarguard/` in the business repo
 
 ### Requirement: Workflow reference stays aligned with README
 
@@ -39,5 +40,5 @@ Cursor base rule and Codex `AGENTS.md` SHALL reference the README execution-cont
 #### Scenario: Cursor agent full-project scan
 
 - **WHEN** a Cursor agent performs B1 full-project scan per base rule
-- **THEN** instructions indicate resolving `scan.py` from skills_creator or `sonar_api.py issues --all` from the target repo hook directory
+- **THEN** instructions indicate using `python .sonarguard/scan.py --repo . --scope full` when installed, or skills_creator/bootstrap paths otherwise
 - **AND** `--repo` is set to the opened project root

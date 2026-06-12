@@ -17,6 +17,8 @@ HOOK_MARK_END = "# <<< sonar-guard <<<"
 CODEX_MARK_START = "# >>> sonar-guard >>>"
 CODEX_MARK_END = "# <<< sonar-guard <<<"
 
+HOOK_SCRIPT_NAMES = ("check_staged.py", "sonar_api.py", "scan.py")
+
 RULE_NAMES = [
     "00-sonar-guard-base.mdc",
     "sonar-fix-risk.mdc",
@@ -244,6 +246,56 @@ def git_dir(repo: Path) -> Path:
     return (repo / raw).resolve()
 
 
+def copy_hook_scripts(dest: Path) -> None:
+    src = scripts_source_dir()
+    dest.mkdir(parents=True, exist_ok=True)
+    for name in HOOK_SCRIPT_NAMES:
+        shutil.copy2(src / name, dest / name)
+
+
+def save_package_root() -> None:
+    """Persist skills_creator path for bootstrap install from business repos."""
+    root = package_root().parent  # scripts/lib -> scripts -> sonar-guard -> repo root
+    config_path = Path.home() / ".config" / "sonarguard" / "config.json"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    data: dict = {}
+    if config_path.is_file():
+        try:
+            data = json.loads(config_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+    data["packageRoot"] = str(root.resolve())
+    config_path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def install_repo_cli(repo: Path) -> Path:
+    """Copy self-contained scripts to repo-root .sonarguard/ for cwd-friendly commands."""
+    repo_path = repo.resolve()
+    cli_dir = repo_path / ".sonarguard"
+    copy_hook_scripts(cli_dir)
+    src = scripts_source_dir()
+    for source_name, target_name in (
+        ("install_bootstrap.py", "install.py"),
+        ("uninstall_bootstrap.py", "uninstall.py"),
+    ):
+        shutil.copy2(src / source_name, cli_dir / target_name)
+    (cli_dir / ".installed-by-sonar-guard").write_text(
+        datetime.now(timezone.utc).isoformat() + "\n",
+        encoding="utf-8",
+    )
+    return cli_dir
+
+
+def uninstall_repo_cli(repo: Path) -> bool:
+    repo_path = repo.resolve()
+    cli_dir = repo_path / ".sonarguard"
+    marker = cli_dir / ".installed-by-sonar-guard"
+    if marker.is_file() and cli_dir.is_dir():
+        shutil.rmtree(cli_dir)
+        return True
+    return False
+
+
 def hook_snippet() -> str:
     return f"""{HOOK_MARK_START}
 REPO_ROOT="$(git rev-parse --show-toplevel)"
@@ -267,9 +319,7 @@ def install_pre_commit_hook(repo: Path) -> tuple[Path, Path, str]:
     guard_dir = hook_dir / "sonarguard"
     guard_dir.mkdir(parents=True, exist_ok=True)
 
-    src = scripts_source_dir()
-    for name in ("check_staged.py", "sonar_api.py"):
-        shutil.copy2(src / name, guard_dir / name)
+    copy_hook_scripts(guard_dir)
 
     pre_commit_path = hook_dir / "pre-commit"
     snippet = hook_snippet()
@@ -314,6 +364,8 @@ def uninstall_pre_commit_hook(repo: Path) -> dict:
 
     if guard_dir.exists():
         shutil.rmtree(guard_dir)
+
+    uninstall_repo_cli(repo_path)
 
     if pre_commit_path.is_file():
         existing = pre_commit_path.read_text(encoding="utf-8")
@@ -377,8 +429,13 @@ def print_post_install_hints(repo: Path, *, config_path: Path, hook_installed: b
         print("② 项目信息: 已从 .sonarguard.json 或 sonar-project.properties 就绪")
 
     print("③ 新开一条 Agent 对话，改代码后应自动出 Sonar 合规报告。")
-    print("④ 全项目扫描(B1): python sonar-guard/scripts/scan.py --repo . --scope full")
+    repo_s = str(repo.resolve())
+    cli = repo / ".sonarguard"
+    print("④ 在业务仓库内扫描（安装后在此目录执行）:")
+    print(f'   cd "{repo_s}"')
+    print(f'   python "{cli / "sonar_api.py"}" status --repo .')
+    print(f'   python "{cli / "scan.py"}" --repo . --scope full')
     if hook_installed:
         check_script = git_dir(repo) / "hooks" / "sonarguard" / "check_staged.py"
         print("⑤ pre-commit 已安装；模拟检查:")
-        print(f'   python "{check_script}" --repo "{repo.resolve()}"')
+        print(f'   python "{check_script}" --repo "{repo_s}"')

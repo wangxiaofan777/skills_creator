@@ -17,32 +17,115 @@
 
 ## 三平台一键安装
 
-在 **skills_creator 仓库根目录**执行（`--repo` 换成你的业务 git 仓库）：
+文档里的路径都是**占位符**，请换成你本机实际目录（clone 在哪都行，**不要**写死 `D:\...`）：
 
-| 平台 | 命令 |
+| 占位符 | 含义 |
+|--------|------|
+| `<skills_creator>` | 本仓库 clone 到的**任意**目录 |
+| `<business-repo>` | 业务 git 仓库根（例如 metis） |
+
+> **重要**：`sonar-guard/scripts/install.py` 只存在于 `<skills_creator>` 里。在业务仓库内**不能**写 `python sonar-guard/scripts/install.py`（会 file not found）。
+
+### 方式 A：推荐（任意电脑，相对路径）
+
+clone 后 **cd 进 skills_creator**，用相对路径 install，**不依赖盘符**：
+
+```powershell
+cd <skills_creator>
+python sonar-guard/scripts/install.py --platform all --repo <business-repo> --host-url https://sonar.example.com --project-key YOUR_KEY
+```
+
+装 **skills_creator 自身**时：把 `<business-repo>` 写成 `.`。
+
+### 方式 B：在业务仓库里 install（先配一次环境）
+
+适合「人已经在 `<business-repo>` 里、不想 cd」——先在本机配置 skills_creator 位置（**每台电脑一次**）：
+
+```powershell
+cd <skills_creator>
+powershell -File sonar-guard/scripts/setup-env.ps1
+```
+
+`setup-env` 会写入 `~/.config/sonarguard/config.json` 并设置用户级 `SONARGUARD_HOME`。**新开终端**后：
+
+```powershell
+cd <business-repo>
+python "$env:SONARGUARD_HOME/sonar-guard/scripts/install_bootstrap.py" --platform all --repo . --host-url https://sonar.example.com --project-key YOUR_KEY
+```
+
+Linux/macOS：用 `sonar-guard/scripts/setup-env.sh`，之后 `python "$SONARGUARD_HOME/sonar-guard/scripts/install_bootstrap.py" ...`。
+
+### 方式 C：业务仓库已装过（升级 / 重装）
+
+```powershell
+cd <business-repo>
+python .sonarguard/install.py --platform all --repo .
+```
+
+依赖本机 `~/.config/sonarguard/config.json` 里的 `packageRoot`（方式 A/B 成功 install 后会自动写入）。
+
+| 平台 | 参数 |
 |------|------|
-| **全部**（Cursor + Claude + pre-commit） | `python sonar-guard/scripts/install.py --platform all --repo .` |
-| Cursor | `python sonar-guard/scripts/install.py --platform cursor --repo .` |
-| Claude Code | `python sonar-guard/scripts/install.py --platform claude --repo .` |
-| Codex | `python sonar-guard/scripts/install.py --platform codex --repo .` |
+| **全部** | `--platform all` |
+| Cursor | `--platform cursor` |
+| Claude Code | `--platform claude` |
+| Codex | `--platform codex` |
 
-无 `sonar-project.properties` 时示例：
+**移除（业务仓库内）：**
 
-```bash
-python sonar-guard/scripts/install.py --platform all --repo . \
-  --host-url https://sonar.example.com --project-key my-project
+```powershell
+python .sonarguard/uninstall.py --platform all --repo .
+python .sonarguard/uninstall.py --platform all --repo . --purge-config
 ```
 
-**移除：**
+### 开放给其他开发者 / 换电脑
 
-```bash
-python sonar-guard/scripts/uninstall.py --platform all --repo .
-python sonar-guard/scripts/uninstall.py --platform all --repo . --purge-config
-```
+| 角色 | 做什么 |
+|------|--------|
+| **第一次接入的人** | clone `<skills_creator>` → **方式 A** install 到 `<business-repo>`；可选把生成的 `.sonarguard/` **提交到业务仓库** |
+| **后续同事（只扫 Sonar）** | clone 业务仓库 → 配 `SONAR_TOKEN` → `python .sonarguard/scan.py --repo . --scope full`（若 `.sonarguard/` 已在 git 里） |
+| **后续同事（Cursor + pre-commit）** | 各自 clone `<skills_creator>` → **方式 A** 再跑一遍（规则装在本机 `~/.cursor`，hook 在本机 `.git`） |
+
+`packageRoot` 在 **`~/.config/sonarguard/config.json`（每人本机）**，路径互不影响；文档示例不出现固定盘符。
 
 兼容旧命令：`install_cursor.py` / `uninstall_cursor.py` 仍可用（内部调用统一安装器）。
 
 装完后**新开一条 Agent 对话**。
+
+---
+
+## 快速开始（业务仓库）
+
+### 第一次安装
+
+**推荐（任意电脑）：**
+
+```powershell
+cd <skills_creator>
+python sonar-guard/scripts/install.py --platform all --repo <business-repo> --host-url https://sonar.example.com --project-key YOUR_KEY
+```
+
+已在业务仓库、且配好 `SONARGUARD_HOME` 时，见上文 **方式 B**。
+
+### 日常扫描（install 后）
+
+```powershell
+cd <business-repo>
+python .sonarguard/sonar_api.py status --repo .
+python .sonarguard/scan.py --repo . --scope full
+python .sonarguard/scan.py --repo . --scope staged
+```
+
+> `.sonarguard/` 由 `install.py` 写入业务仓库根目录；未 install 前不存在。
+
+### 命令跑不通？
+
+| 报错 | 原因 | 解决 |
+|------|------|------|
+| `can't open file '...\metis\sonar-guard\scripts\install.py'` | 在业务仓库里用了相对路径 `sonar-guard/scripts/` | **方式 A**：`cd <skills_creator>` 再 install；或 **方式 B** + `SONARGUARD_HOME` |
+| `can't open file '...\sonar-guard\scripts\...'`（scan/status） | 在业务仓库里用了 skills_creator 的扫描路径 | 用 `.sonarguard/scan.py`；或先 install |
+| `Unexpected token 'host-url'`（PowerShell） | 用了 bash 的 `\` 续行 | 改成 **单行**命令（见上方示例） |
+| `can't open file '...\.sonarguard\...'` | 未 install | 先跑 `install_bootstrap.py` |
 
 ---
 
@@ -52,38 +135,181 @@ python sonar-guard/scripts/uninstall.py --platform all --repo . --purge-config
 
 | 操作 | 在哪个目录执行 | 脚本在哪 |
 |------|----------------|----------|
-| **安装** | `<skills_creator>` 根目录 | `sonar-guard/scripts/install.py` |
-| **B1 全项目扫描** | 任意目录均可；脚本路径指向 skills_creator | `sonar-guard/scripts/scan.py` |
-| **pre-commit** | 不用手敲 | 目标仓库 `.git/hooks/sonarguard/`（`git commit` 自动跑） |
+| **安装（每个业务仓库一次）** | `<skills_creator>` 根目录 | `sonar-guard/scripts/install.py --repo <业务仓库>` |
+| **status / B1 / 增量 / 暂存区** | **业务仓库**根目录（install 后） | `.sonarguard/sonar_api.py`、`.sonarguard/scan.py` |
+| **未 install 时远程扫** | `<skills_creator>` 根目录 | `sonar-guard/scripts/scan.py --repo <业务仓库>` |
+| **pre-commit** | 不用手敲 | `.git/hooks/sonarguard/`（`git commit` 自动跑） |
 
-### 场景 A：扫 skills_creator 自身
+### 场景 A：业务仓库内（install 后）
 
-```bash
-cd <skills_creator>
-python sonar-guard/scripts/scan.py --repo . --scope full
+```powershell
+cd <business-repo>
+python .sonarguard/sonar_api.py status --repo .
+python .sonarguard/scan.py --repo . --scope full
 ```
 
-### 场景 B：在 skills_creator 里，扫另一个业务仓库（常用）
+### 场景 B：在 skills_creator 里扫另一个业务仓库
 
-```bash
+```powershell
 cd <skills_creator>
 python sonar-guard/scripts/scan.py --repo <business-repo> --scope full
 ```
 
-`<business-repo>` 须已安装 sonar-guard（`install.py --repo <business-repo>`）且配好 `.sonarguard.json` + 本机 `SONAR_TOKEN`。
+`<business-repo>` 须已 `install.py --repo <business-repo>` 且配好 `.sonarguard.json` + 本机 `SONAR_TOKEN`。
 
-### 场景 C：已在业务仓库里，不依赖 skills_creator 路径
+### 场景 C：扫 skills_creator 自身
 
-装过 pre-commit 后，hook 目录里有 `sonar_api.py`（**没有** `scan.py`），等价 B1：
+```bash
+cd <skills_creator>
+python .sonarguard/scan.py --repo . --scope full
+# 或（未 install 时）python sonar-guard/scripts/scan.py --repo . --scope full
+```
+
+### 场景 D：hook 路径（与 `.sonarguard/` 同脚本，可选）
 
 ```bash
 cd <business-repo>
 python .git/hooks/sonarguard/sonar_api.py issues --repo . --all
+python .git/hooks/sonarguard/scan.py --repo . --scope full
 ```
 
-### 场景 D：在 Cursor / Claude / Codex 里
+### 场景 E：在 Cursor / Claude / Codex 里
 
-打开**业务仓库**，对 Agent 说：「扫一下全项目的 sonar 问题」。Agent 应把 `--repo` 设为当前项目根，并执行 `scan.py --scope full` 或 hook 内 `issues --all`。
+打开**业务仓库**，对 Agent 说：「扫一下全项目的 sonar 问题」。Agent 应在项目根执行 `python .sonarguard/scan.py --repo . --scope full`（install 后）。
+
+---
+
+## 配置参考
+
+### 最小配置（目标仓库根目录 `.sonarguard.json`）
+
+```json
+{
+  "hostUrl": "https://sonar.example.com",
+  "projectKey": "my-project-key"
+}
+```
+
+- **不要**把 token 写进此文件；token 仅放本机（见下）。
+- 空对象 `{}` = 未配置项目 → `status` 会报 `unreachable`（离线模式）。
+
+### 个人 token（二选一）
+
+**方式 A — 环境变量（推荐，CI/本机通用）：**
+
+```bash
+# PowerShell
+$env:SONAR_TOKEN = "squ_xxxxxxxx"
+
+# bash
+export SONAR_TOKEN=squ_xxxxxxxx
+```
+
+**方式 B — 用户配置文件：**
+
+`~/.config/sonarguard/config.json`（Windows: `%USERPROFILE%\.config\sonarguard\config.json`）
+
+```json
+{
+  "token": "squ_xxxxxxxx"
+}
+```
+
+可选在同一文件写默认 `hostUrl`（会被仓库 `.sonarguard.json` 覆盖，除非未配置）：
+
+```json
+{
+  "token": "squ_xxxxxxxx",
+  "hostUrl": "https://sonar.example.com"
+}
+```
+
+### 用 `sonar-project.properties` 代替（可选）
+
+若仓库已有 Sonar 扫描配置，可只配 token，项目侧用 properties：
+
+```properties
+sonar.projectKey=my-project-key
+sonar.host.url=https://sonar.example.com
+```
+
+`.sonarguard.json` 中的同名字段优先于 properties。
+
+### 完整 `.sonarguard.json`（含 pre-commit hook 选项）
+
+一般不用改；默认值如下：
+
+```json
+{
+  "hostUrl": "https://sonar.example.com",
+  "projectKey": "my-project-key",
+  "hook": {
+    "mode": "severity",
+    "blockSeverities": ["BLOCKER", "CRITICAL"],
+    "localChecks": true
+  }
+}
+```
+
+| 字段 | 含义 | 默认 |
+|------|------|------|
+| `hook.mode` | pre-commit 拦截策略 | `"severity"` |
+| `hook.blockSeverities` | 达到这些级别则阻止提交 | `["BLOCKER","CRITICAL"]` |
+| `hook.localChecks` | 是否跑本地启发式检查 | `true` |
+
+### 配置合并优先级
+
+`load_config()` 读取顺序（后者覆盖前者，仅 token / hostUrl）：
+
+1. 目标仓库 `.sonarguard.json`
+2. 目标仓库 `sonar-project.properties`（补 `projectKey` / `hostUrl`）
+3. `~/.config/sonarguard/config.json`（`token`；`hostUrl` 仅当仓库未配时）
+4. 环境变量：`SONAR_TOKEN`、`SONAR_HOST_URL`
+
+验证配置（**`--repo` = 目标 git 仓库根**）：
+
+```bash
+python sonar-guard/scripts/sonar_api.py status --repo <目标仓库>
+```
+
+### `status` 输出说明
+
+| 字段 | 含义 |
+|------|------|
+| `hostUrl` | 合并后的 Sonar 地址；未配则为 `null` |
+| `projectKey` | 合并后的项目 key |
+| `tokenConfigured` | 是否已有 token（不展示 token 本身） |
+| `project_state` | 连通/权限结论（见下表） |
+| `hint` | 人类可读说明或排障提示 |
+| `project.name` / `project.lastAnalysis` | 仅 `ok` 时有：项目名、上次分析时间 |
+| `qualityGate` | 仅 `ok` 且有权时：如 `OK` / `ERROR` |
+| `configError` | `.sonarguard.json` 解析失败时的错误信息 |
+| `hook` | 生效的 pre-commit 配置 |
+
+| `project_state` | 含义 | 下一步 |
+|-----------------|------|--------|
+| `unreachable` | 缺 `hostUrl` 或 `projectKey`，或网络不可达 | 补 `.sonarguard.json` / properties；检查 VPN 与 URL |
+| `no_auth` | 未配置 token | 设置 `SONAR_TOKEN` 或用户 `config.json` |
+| `ok` | 服务器可达、项目存在 | 可跑 B1：`scan.py --scope full` |
+| `not_found` | Sonar 上无此 projectKey（从未扫描） | 确认 key 正确；等 CI 首次扫描；暂用离线模式 |
+| `no_permission` | token 无 Browse 权限 | 找 Sonar 管理员授权；暂用离线模式 |
+
+**常见排障流程：**
+
+1. `hostUrl: null` → 在目标仓库写 `.sonarguard.json` 的 `hostUrl`（或 properties / `SONAR_HOST_URL`）
+2. `tokenConfigured: false` → 设置 `SONAR_TOKEN`
+3. `project_state: ok` 后再跑 `scan.py --scope full`
+
+### 可选环境变量
+
+| 变量 | 作用 | 默认 |
+|------|------|------|
+| `SONAR_TOKEN` | 个人访问 token | — |
+| `SONAR_HOST_URL` | 覆盖 hostUrl | — |
+| `SONARGUARD_TIMEOUT` | API 超时（秒） | `5` |
+| `SONARGUARD_MAX_ISSUE_PAGES` | B1 `--all` 最多拉取页数（每页 500 条） | `20` |
+
+B1 结果若含 `"truncated": true`，提高 `SONARGUARD_MAX_ISSUE_PAGES` 后重跑。
 
 ---
 
@@ -131,7 +357,7 @@ sonar-guard/
 │   ├── sonar_api.py             Sonar API（status / issues --all / rules）
 │   ├── check_staged.py          pre-commit 检查
 │   ├── scan.py                  full | staged | files
-│   ├── install.py / uninstall.py
+│   ├── install.py / uninstall.py   安装时写入目标仓库 .sonarguard/
 │   ├── install_cursor.py        兼容包装
 │   └── lib/install_lib.py
 ├── claude-code/sonar-guard/     Claude Code Skill

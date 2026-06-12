@@ -23,8 +23,10 @@ from lib.install_lib import (  # noqa: E402
     install_codex_agents,
     install_cursor_rules,
     install_pre_commit_hook,
+    install_repo_cli,
     print_post_install_hints,
     resolve_platforms,
+    save_package_root,
 )
 
 
@@ -67,6 +69,9 @@ def main() -> int:
         )
         print(f"{'Created' if created else 'Kept existing'} {config_path}")
 
+        cli_dir = install_repo_cli(repo)
+        print(f"Repo CLI: {cli_dir}")
+
         hook_installed = False
         if not args.no_hook and platforms & {"cursor", "claude", "codex"}:
             _, pre_commit_path, action = install_pre_commit_hook(repo)
@@ -74,6 +79,7 @@ def main() -> int:
             hook_installed = True
 
         print_post_install_hints(repo, config_path=config_path, hook_installed=hook_installed)
+        save_package_root()
     except (FileNotFoundError, subprocess.CalledProcessError, OSError) as err:
         print(f"Install failed: {err}", file=sys.stderr)
         return 1

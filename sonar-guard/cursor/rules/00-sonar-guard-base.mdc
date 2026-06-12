@@ -7,17 +7,18 @@ alwaysApply: true
 
 仓库根目录存在 `.sonarguard.json` 时生效:**任何代码编写/修改完成后,主动对照 Sonar 规范审查本次变更**,不要等用户提醒。
 
-完整工作流见 `sonar-guard/references/workflow.md`；**在哪执行、`--repo` 指哪个仓库** 见 `sonar-guard/README.md` §在哪执行。
+完整工作流见 `sonar-guard/references/workflow.md`；**在哪执行、`--repo` 指哪个仓库** 见 `sonar-guard/README.md` §快速开始。
 
 ## 工作流
 
 1. **探测状态**（`--repo` = 当前打开的 git 项目根）:
    ```bash
-   python sonar-guard/scripts/sonar_api.py status --repo .
+   python .sonarguard/sonar_api.py status --repo .
    ```
+   若 `.sonarguard/` 不存在,提示用户从 skills_creator 运行 `install.py --repo <项目根>`;或从 skills_creator 用 `sonar-guard/scripts/sonar_api.py --repo <项目根>`。
 2. **服务器模式 (`project_state: ok`)**:
-   - 全项目(B1): 优先 `python sonar-guard/scripts/scan.py --repo <项目根> --scope full`；若仅有 hook 则用 `.git/hooks/sonarguard/sonar_api.py issues --repo . --all`
-   - 增量/变更文件: `python sonar-guard/scripts/scan.py --repo . --scope files --files <paths>`
+   - 全项目(B1): `python .sonarguard/scan.py --repo . --scope full`
+   - 增量/变更文件: `python .sonarguard/scan.py --repo . --scope files --files <paths>`
 3. **离线模式** (`not_found`/`no_auth`/`unreachable`): 按语言规则卡片审查,报告注明离线原因。
 4. 按变更语言加载规则卡片(Java / Python / JS·TS / Go)与「修复风险评估」卡片。
 5. 输出报告(见 workflow.md 截断规则):

@@ -68,6 +68,21 @@ The package SHALL provide `sonar-guard/scripts/uninstall.py` with `--platform cu
 - **WHEN** the user runs `python sonar-guard/scripts/install_cursor.py --repo <repo>`
 - **THEN** behavior is equivalent to `install.py --platform cursor --repo <repo>`
 
+### Requirement: Pre-commit hook installs self-contained scripts
+
+The unified installer SHALL copy `check_staged.py`, `sonar_api.py`, and `scan.py` into `.git/hooks/sonarguard/` for the target repository and SHALL append or update a marked pre-commit snippet without overwriting unrelated hook content.
+
+#### Scenario: Hook directory is self-contained
+
+- **WHEN** install completes with hook enabled for a git repository
+- **THEN** `.git/hooks/sonarguard/` contains `check_staged.py`, `sonar_api.py`, and `scan.py`
+- **AND** pre-commit invokes `check_staged.py` with `--repo` set to the repository root
+
+#### Scenario: Reinstall refreshes hook scripts
+
+- **WHEN** install runs again on the same repository
+- **THEN** hook scripts are overwritten with the current package versions
+
 ### Requirement: Cross-platform documentation
 
 `sonar-guard/README.md` SHALL present Claude Code, Cursor, and Codex with equal prominence (not Cursor-first), document the two required configuration items (`SONAR_TOKEN` and project `hostUrl`/`projectKey`), and use repository-relative or `~` paths only.
