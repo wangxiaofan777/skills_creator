@@ -4,6 +4,8 @@
 
 > **平台覆盖**：✅ Claude Code ✅ Cursor ✅ Codex（三端对齐：服务器模式 + B1 全项目 issue + 离线 fallback）
 
+> **阅读路径**：简介 → [快速开始](#三平台一键安装) → [配置](#配置参考) → [使用](#扫描模式) → [架构](#架构) → [支持语言](#支持语言) → [排障](#命令跑不通)
+
 ## 你只需要配 2 样
 
 | # | 配置 | 放哪里 | 不配会怎样 |
@@ -361,6 +363,36 @@ pre-commit 与 AI 工具无关，装一次全团队受益。
 
 ---
 
+## 架构
+
+数据流（底层 JSON 契约 → 渲染 → 输出）：
+
+```
+sonar_api.py   SonarQube 开放 API 封装，输出 JSON（机器契约：钩子 import、外部脚本）
+   │
+scan.py        友好入口，--format md/html/json + 落盘 .sonarguard/reports/
+   ├── render.py        零依赖渲染（md/html）+ 确定性截断（BLOCKER/CRITICAL 全列、MAJOR ≤20…）
+   └── check_staged.py  pre-commit 钩子：彩色拦截/警告 + 服务器 3s 超时降级离线
+   │
+输出           对话框 Markdown · .sonarguard/reports/ 时间戳归档 · HTML 自动打开
+```
+
+- **报告事实由脚本确定性生成**（汇总表 + issue 清单 + 截断）；SKILL/AI 只在其上叠加「怎么修 + 风险 🟢🟡🔴」，不重复截断。
+- `sonar_api.py` 永远输出 JSON，是 pre-commit 钩子与外部脚本依赖的机器契约。
+- 一键入口 `/sonar-scan` 触发 `scan.py --format md` 并把报告渲染进对话框。
+- 架构总览图见 [`doc/01-architecture.png`](../doc/01-architecture.png)。
+
+## 支持语言
+
+| 语言 | 服务器模式 | 离线启发式（高置信子集） |
+|------|-----------|--------------------------|
+| Java | ✅ | 空 catch、字符串 `==`、`System.out`、`printStackTrace`、硬编码密钥… |
+| Python | ✅ | 裸 `except:`、`print` 调试残留… |
+| JS/TS（含 Vue/React） | ✅ | `debugger`、`console.log`、`==`/`!=`… |
+| Go | ✅ | 忽略 `err`、硬编码密钥… |
+
+各语言修复方法与风险见 `claude-code/sonar-guard/references/rules-*.md`；离线启发式定义在 `scripts/check_staged.py`。
+
 ## 目录结构
 
 ```
@@ -368,9 +400,10 @@ sonar-guard/
 ├── README.md
 ├── references/workflow.md       三端共享工作流
 ├── scripts/
-│   ├── sonar_api.py             Sonar API（status / issues --all / rules）
-│   ├── check_staged.py          pre-commit 检查
-│   ├── scan.py                  full | staged | files
+│   ├── sonar_api.py             Sonar API（status / issues --all / rules）→ JSON 契约
+│   ├── check_staged.py          pre-commit 检查（彩色拦截/警告）
+│   ├── scan.py                  full | staged | files，--format md/html/json
+│   ├── render.py                零依赖 md/html 渲染 + 确定性截断
 │   ├── install.py / uninstall.py   安装时写入目标仓库 .sonarguard/
 │   ├── install_cursor.py        兼容包装
 │   └── lib/install_lib.py

@@ -1,2 +1,6 @@
 # sonar-guard 报告产物
 .sonarguard/reports/
+
+# Python 字节码缓存
+__pycache__/
+*.pyc

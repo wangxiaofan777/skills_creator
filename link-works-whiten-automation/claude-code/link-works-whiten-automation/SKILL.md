@@ -26,7 +26,7 @@ metadata:
 
 1. **MUST** execute whitening through `link-works.whiteningFile` (or `runCommands` chaining it) inside the Cursor extension host.
 2. **MUST NOT** treat editing `%APPDATA%\Cursor\User\globalStorage\link-works.link-works\commitReport.*.json` as sufficient — memory stats drive commit attribution while Cursor is open.
-3. **MUST NOT** add whitening logic under `metis-app-dataagent/` business code.
+3. **MUST NOT** add whitening logic into the target repository's business/application code; keep all tooling under `scripts/`.
 4. Prefer repo scripts when present: `{gitRoot}/scripts/link-works-whiten-all.ps1`.
 
 ## Whitening semantics
@@ -37,7 +37,7 @@ For each file in the current commit cycle:
 - `manualLine = fileInc - min(perFileAi, fileInc)` (Link Works「其他行数」)
 - Whiten sets `perFileAi` to at least `fileInc` via `applyHookWhitening`
 
-## Script map (target repository)
+## Script map (shipped by this package; install into target repo's `scripts/`)
 
 | Script | Purpose |
 |--------|---------|
@@ -67,4 +67,4 @@ For each file in the current commit cycle:
 ## Canonical sources
 
 - **Skill package**: `skills_creator/link-works-whiten-automation/` — install Cursor skill from repo root: `node link-works-whiten-automation/scripts/install-cursor-skill.mjs`
-- **Whitening scripts**: `{gitRoot}/scripts/link-works-*.ps1` in the target repository (not shipped by this package)
+- **Whitening scripts**: shipped by this package under `link-works-whiten-automation/scripts/` (canonical source). Distribute into a target repo's `scripts/` via `node link-works-whiten-automation/scripts/install-link-works-scripts.mjs --repo <target>`.

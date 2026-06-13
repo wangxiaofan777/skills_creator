@@ -7,8 +7,8 @@
 | Skill | 一句话定位 | 语言/框架范围 | 平台覆盖 | 详细文档 |
 |---|---|---|---|---|
 | [senior-code-style](senior-code-style/) | 以资深(10年+)工程师的风格写/重构代码,做减法、消除过度抽象与样板 | Java 后端 + React/Vue/TS 前端 | ✅ Claude Code ✅ Cursor ✅ Codex | [README](senior-code-style/README.md) |
-| [sonar-guard](sonar-guard/) | 开发时 + git 提交时对照 SonarQube 检查；B1 全项目 issue + 增量扫描 + 修复风险评估 | Java / Python / JS·TS / Go | ✅ Claude Code ✅ Cursor ✅ Codex | [README](sonar-guard/README.md) |
-| [link-works-whiten-automation](link-works-whiten-automation/) | Link Works「洗白 AI」批量与 pre-commit 自动化 Agent 指引 | 任意含 `scripts/link-works-*` 的 git 仓库 | ✅ Claude Code ✅ Cursor ✅ Codex | [README](link-works-whiten-automation/README.md) |
+| [sonar-guard](sonar-guard/) | 开发时 + git 提交时对照 SonarQube 检查；B1 全项目 issue + 增量扫描 + 修复风险评估；md/html/json 多格式报告 + `/sonar-scan` 一键 | Java / Python / JS·TS / Go | ✅ Claude Code ✅ Cursor ✅ Codex | [README](sonar-guard/README.md) |
+| [link-works-whiten-automation](link-works-whiten-automation/) | Link Works「洗白 AI」批量与 pre-commit 自动化；自带执行脚本 + 安装器分发到目标仓库 | 任意 git 仓库（脚本本包自带） | ✅ Claude Code ✅ Cursor ✅ Codex | [README](link-works-whiten-automation/README.md) |
 
 ## 目录结构
 
@@ -32,7 +32,7 @@ skills_creator/
     ├── claude-code/            Claude Code SKILL.md
     ├── cursor/skills/          Cursor 用户级 SKILL.md
     ├── codex/                  Codex SKILL.md
-    └── scripts/                install-cursor-skill.mjs
+    └── scripts/                安装器(install-cursor-skill / install-link-works-scripts)+ 洗白执行脚本(.ps1 / lib/*.mjs)
 ```
 
 ## 两个 Skill 怎么配合

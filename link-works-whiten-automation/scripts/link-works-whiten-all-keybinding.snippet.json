@@ -1,0 +1,10 @@
+// Merge into Cursor/VS Code user keybindings.json (Keyboard Shortcuts: Open Keyboard Shortcuts JSON).
+// Runs the repo task which executes scripts/link-works-whiten-all.ps1.
+[
+  {
+    "key": "ctrl+alt+shift+w",
+    "command": "workbench.action.tasks.runTask",
+    "args": "Link Works: Whiten All Pending",
+    "when": "workspaceFolderCount > 0"
+  }
+]
