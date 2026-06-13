@@ -340,8 +340,8 @@ def hook_snippet() -> str:
     return f"""{HOOK_MARK_START}
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 GIT_DIR="$(git rev-parse --git-dir)"
-PY=python3
-command -v python3 >/dev/null 2>&1 || PY=python
+PY=python
+if command -v python3 >/dev/null 2>&1 && python3 -c "" >/dev/null 2>&1; then PY=python3; fi
 "$PY" "$GIT_DIR/hooks/sonarguard/check_staged.py" --repo "$REPO_ROOT" || exit 1
 {HOOK_MARK_END}"""
 
