@@ -163,20 +163,31 @@ def cmd_status(cfg: dict) -> dict:
     return out
 
 
+def _norm_repo_path(path: str) -> str:
+    return path.replace("\\", "/").lstrip("./")
+
+
 def cmd_issues(cfg: dict, files: list, repo: str) -> dict:
     """查询指定文件的未解决 issue。文件路径需相对仓库根。"""
     rels = []
     for f in files:
         p = os.path.relpath(os.path.abspath(os.path.join(repo, f)), os.path.abspath(repo))
-        rels.append(p.replace(os.sep, "/"))
-    components = [f"{cfg['projectKey']}:{p}" for p in rels]
+        rels.append(_norm_repo_path(p))
+    rel_set = set(rels)
+    component_keys = [f"{cfg['projectKey']}:{p}" for p in rels]
     issues, batch = [], 15
-    for i in range(0, len(components), batch):
-        params = {"components": ",".join(components[i:i + batch]),
-                  "resolved": "false", "ps": ISSUE_PAGE_SIZE}
+    for i in range(0, len(component_keys), batch):
+        params = {
+            "componentKeys": ",".join(component_keys[i:i + batch]),
+            "onComponentOnly": "true",
+            "resolved": "false",
+            "ps": ISSUE_PAGE_SIZE,
+        }
         data = api_get(cfg, "/api/issues/search", params)
         for it in data.get("issues", []):
-            issues.append(_parse_issue(it))
+            parsed = _parse_issue(it)
+            if _norm_repo_path(parsed["file"]) in rel_set:
+                issues.append(parsed)
     issues.sort(key=lambda x: (SEV_ORDER.get(x["severity"], 9), x["file"], x["line"] or 0))
     return {"total": len(issues), "bySeverity": _issues_summary(issues), "issues": issues}
 

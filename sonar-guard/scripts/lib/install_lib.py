@@ -17,7 +17,7 @@ HOOK_MARK_END = "# <<< sonar-guard <<<"
 CODEX_MARK_START = "# >>> sonar-guard >>>"
 CODEX_MARK_END = "# <<< sonar-guard <<<"
 
-HOOK_SCRIPT_NAMES = ("check_staged.py", "sonar_api.py", "scan.py", "render.py")
+HOOK_SCRIPT_NAMES = ("check_staged.py", "sonar_api.py", "scan.py", "render.py", "pre-commit-entry.py")
 
 RULE_NAMES = [
     "00-sonar-guard-base.mdc",
@@ -338,11 +338,25 @@ def uninstall_repo_cli(repo: Path) -> bool:
 
 def hook_snippet() -> str:
     return f"""{HOOK_MARK_START}
-REPO_ROOT="$(git rev-parse --show-toplevel)"
-GIT_DIR="$(git rev-parse --git-dir)"
-PY=python
-if command -v python3 >/dev/null 2>&1 && python3 -c "" >/dev/null 2>&1; then PY=python3; fi
-"$PY" "$GIT_DIR/hooks/sonarguard/check_staged.py" --repo "$REPO_ROOT" || exit 1
+REPO_ROOT="$(git rev-parse --show-toplevel)" || exit 1
+ENTRY="$REPO_ROOT/.sonarguard/pre-commit-entry.py"
+if [ ! -f "$ENTRY" ]; then
+  echo "sonar-guard: missing $ENTRY" >&2
+  exit 1
+fi
+for PY in python py; do
+  if command -v "$PY" >/dev/null 2>&1 && "$PY" -c "import sys" >/dev/null 2>&1; then
+    exec "$PY" "$ENTRY"
+  fi
+done
+if command -v py >/dev/null 2>&1; then
+  exec py -3 "$ENTRY"
+fi
+if command -v python3 >/dev/null 2>&1 && python3 -c "import sys" >/dev/null 2>&1; then
+  exec python3 "$ENTRY"
+fi
+echo "sonar-guard: no working Python interpreter found" >&2
+exit 1
 {HOOK_MARK_END}"""
 
 
