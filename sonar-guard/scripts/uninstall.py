@@ -22,6 +22,7 @@ from lib.install_lib import (  # noqa: E402
     uninstall_codex_agents,
     uninstall_cursor_rules,
     uninstall_pre_commit_hook,
+    uninstall_slash_command,
 )
 
 
@@ -47,6 +48,8 @@ def main() -> int:
                 print("Claude Code: removed skill from ~/.claude/skills/sonar-guard/")
             else:
                 print("Claude Code: skill not installed")
+            if uninstall_slash_command(repo):
+                print("Claude Code: removed /sonar-scan command")
 
         if "codex" in platforms:
             if uninstall_codex_agents(repo):

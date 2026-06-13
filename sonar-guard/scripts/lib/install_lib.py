@@ -17,7 +17,7 @@ HOOK_MARK_END = "# <<< sonar-guard <<<"
 CODEX_MARK_START = "# >>> sonar-guard >>>"
 CODEX_MARK_END = "# <<< sonar-guard <<<"
 
-HOOK_SCRIPT_NAMES = ("check_staged.py", "sonar_api.py", "scan.py")
+HOOK_SCRIPT_NAMES = ("check_staged.py", "sonar_api.py", "scan.py", "render.py")
 
 RULE_NAMES = [
     "00-sonar-guard-base.mdc",
@@ -49,6 +49,46 @@ def claude_skill_source_dir() -> Path:
 
 def codex_agents_source() -> Path:
     return package_root() / "codex" / "AGENTS.md"
+
+
+def slash_command_source() -> Path:
+    return package_root() / "claude-code" / "commands" / "sonar-scan.md"
+
+
+def install_slash_command(repo: Path) -> Path:
+    """把 /sonar-scan 命令装进业务仓库的项目级 .claude/commands/。"""
+    source = slash_command_source()
+    if not source.is_file():
+        raise FileNotFoundError(f"Slash command source not found: {source}")
+    target_dir = repo.resolve() / ".claude" / "commands"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target = target_dir / "sonar-scan.md"
+    shutil.copy2(source, target)
+    return target
+
+
+def uninstall_slash_command(repo: Path) -> bool:
+    target = repo.resolve() / ".claude" / "commands" / "sonar-scan.md"
+    if target.is_file():
+        target.unlink()
+        return True
+    return False
+
+
+def ensure_gitignore_entry(repo: Path, entry: str) -> bool:
+    """确保 .gitignore 含某条目(用于忽略 .sonarguard/reports/)。返回是否新增。"""
+    gitignore = repo.resolve() / ".gitignore"
+    lines = []
+    if gitignore.is_file():
+        lines = gitignore.read_text(encoding="utf-8").splitlines()
+        if any(line.strip() == entry for line in lines):
+            return False
+    with gitignore.open("a", encoding="utf-8") as f:
+        if lines and lines[-1].strip():
+            f.write("\n")
+        f.write("# sonar-guard 报告产物\n")
+        f.write(entry + "\n")
+    return True
 
 
 def cursor_rules_dir() -> Path:

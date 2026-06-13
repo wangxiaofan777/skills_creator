@@ -57,14 +57,30 @@ python sonar-guard/scripts/scan.py --repo <目标仓库> --scope staged
 
 ## 3. 报告格式
 
-### 全项目 B1 报告
+scan.py 用 `--format` 选择输出(默认 `md`),报告由**脚本确定性生成**,落盘到 `<repo>/.sonarguard/reports/<scope>-<时间戳>.<ext>`:
+
+| format | 行为 |
+|---|---|
+| `md`（默认） | 渲染 Markdown,打到 stdout(进对话框)并落盘 |
+| `html` | 渲染 HTML,落盘并自动在浏览器打开(headless 时仅打印 `file://` 路径) |
+| `json` | 透传底层 `sonar_api` 原始 JSON,供脚本/自动化消费 |
+
+`--top N` 可调整 MAJOR 详情上限(默认 20)。把 `.sonarguard/reports/` 加入 `.gitignore`。
+
+### 全项目 B1 报告（截断由脚本执行）
 
 - 汇总: 各严重级数量必全
 - 详情: BLOCKER/CRITICAL 全列; MAJOR 最多 20 条; MINOR/INFO 仅计数
 
+> 截断由 scan.py 渲染层确定性实现。AI 直接采用脚本报告,**只叠加修复建议/风险**,不再自行截断或重写问题清单。
+
 ### 增量报告
 
 区分「服务器存量 issue」与「本次新代码（需对照 rules 审查）」。
+
+### 一键命令
+
+`/sonar-scan [full|staged|files]`(Claude Code)运行对应 scope 的 `scan.py --format md`,把报告显示在对话框,再由 SKILL 叠加修复建议。
 
 ## 4. 配置（仅 2 项）
 

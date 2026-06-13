@@ -80,7 +80,7 @@ python sonar-guard/scripts/sonar_api.py status --repo <仓库路径>
 
 1. **确定范围**: 本次变更文件; **全项目扫描(B1)** 时用户要「扫全仓库 sonar 问题」→ 见下 `--scope full`。
 2. **探测项目状态**(见上节)。共享流程见 `references/workflow.md`(skills_creator 内 `sonar-guard/references/workflow.md`)。
-3. **服务器模式下拉取数据**:
+3. **服务器模式下拉取数据**(scan.py 默认输出 Markdown 报告,并落盘到 `.sonarguard/reports/<scope>-<时间戳>.md`):
 
    ```bash
    # B1 全项目未解决 issue(Sonar 服务器存量)
@@ -89,9 +89,12 @@ python sonar-guard/scripts/sonar_api.py status --repo <仓库路径>
    # 增量: 指定文件的存量 issue
    python sonar-guard/scripts/scan.py --repo <仓库路径> --scope files --files src/a/Foo.java
 
+   # 其它格式: --format html(自动浏览器打开) / --format json(供脚本消费)
    # 可选: 活跃规则(审查新写法时)
    python sonar-guard/scripts/sonar_api.py rules --repo <仓库路径> --langs java,py,js,ts,go
    ```
+
+   报告正文(严重级汇总、issue 清单、截断)由 scan.py 确定性生成;你的职责是在此之上**叠加修复建议**,见步骤 6。
 
 4. **读取对应语言的规则参考**(无论哪种模式都要读——服务器规则列表只有规则名,修复方法和风险评估在参考文件里):
    - Java → `references/rules-java.md`
@@ -100,7 +103,7 @@ python sonar-guard/scripts/sonar_api.py status --repo <仓库路径>
    - Go → `references/rules-go.md`
    - 风险评估方法 → `references/fix-risk-guide.md`(给修复建议前必读)
 5. **逐文件审查变更代码**,对照活跃规则找违规。注意:服务器返回的 issue 是上次扫描的结果,反映**存量问题**;本次新写的代码要靠你自己对照规则审查——这是开发阶段检查的主要价值。
-6. **输出报告**,固定结构:
+6. **叠加修复建议**:scan.py 已经产出「哪里有问题」的报告事实(汇总表 + issue 清单 + 截断),**不要重新生成或重新截断这份清单**。你在它之上补充「怎么修 + 风险 + 分组建议」,固定结构:
 
 ```markdown
 ## Sonar 合规检查报告(模式:服务器 / 离线-未扫描 / 离线-无权限)
@@ -130,7 +133,7 @@ python sonar-guard/scripts/sonar_api.py status --repo <仓库路径>
    - 🔴 高风险:**先问用户**,说明可能的行为变化,得到确认才改。
    - 多个修复按风险分组提交,不要混在一个大改动里,方便回滚。
    - 不确定某条服务器规则的修法时,用 `python sonar-guard/scripts/sonar_api.py rule --repo <仓库路径> --key java:S2095` 拉取官方规则描述。
-   - **B1 全项目报告**: 汇总表必全; BLOCKER/CRITICAL 全列; MAJOR 最多 20 条; MINOR/INFO 仅计数(见 workflow.md)。
+   - **B1 全项目报告**: 截断由 scan.py 渲染层确定性执行(汇总必全; BLOCKER/CRITICAL 全列; MAJOR 最多 20 条; MINOR/INFO 仅计数),你直接采用脚本输出,不要再自行截断(见 workflow.md)。
 
 ## 3. 提交阶段检查(pre-commit 钩子)
 
@@ -162,6 +165,7 @@ python sonar-guard/scripts/scan.py --repo /path/to/repo --scope staged
 
 | 用户说 | 做什么 |
 |---|---|
+| `/sonar-scan [full\|staged\|files]` | 运行对应 scope 的 `scan.py --format md`,把报告贴进对话,再叠加修复建议 |
 | "扫全仓库/全项目 sonar 问题" | B1: `scan.py --scope full` → 汇总报告(截断规则见 workflow.md) |
 | "帮我看看这段代码有没有 sonar 问题" | 第 2 节流程,范围=指定代码 |
 | "把这些 sonar 问题修了" | 拉 issue → 按风险分组 → 🟢🟡直接修,🔴先确认 |

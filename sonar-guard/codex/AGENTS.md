@@ -5,11 +5,12 @@
 ## 工作流
 
 1. `python sonar-guard/scripts/sonar_api.py status --repo .`（`.` = 当前打开的项目根）
-2. 服务器 `ok` 时:
+2. 服务器 `ok` 时(scan.py 默认输出 Markdown 报告,落盘 `.sonarguard/reports/`;`--format html/json` 可选):
    - 全项目(B1): `scan.py --repo . --scope full`，或 hook 内 `sonar_api.py issues --repo . --all`
    - 增量: `scan.py --scope files --files <变更文件>`
+   - 一键: 用户可用 `/sonar-scan [full|staged|files]` 触发并把报告显示在对话里。
 3. 离线 fallback: 按下文规则审查,报告注明离线原因。
-4. 报告: 汇总表 + BLOCKER/CRITICAL 全列 + MAJOR 截断 20 条 + 修复风险 🟢🟡🔴。
+4. 报告: 汇总表 + 截断(BLOCKER/CRITICAL 全列 + MAJOR 20 条)由 scan.py 确定性生成,你直接采用脚本输出,只叠加修复风险 🟢🟡🔴,不要重复截断。
 
 ## 修复风险分级
 

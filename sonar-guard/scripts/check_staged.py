@@ -117,6 +117,29 @@ def fetch_server_issues(repo, cfg, files):
         return None, "unreachable"
 
 
+def collect_findings(repo, cfg):
+    """收集暂存区文件的 findings(服务器存量 + 本地检查),供钩子与 scan.py 共用。
+
+    返回 (files, findings, state):
+      files    暂存区中受支持语言的文件
+      findings 已按严重级排序的问题列表(每条含 source)
+      state    服务器探测状态(ok / not_found / ...)
+    """
+    hook = cfg.get("hook", {})
+    files = staged_files(repo)
+    if not files:
+        return [], [], "ok"
+
+    findings = []
+    server_issues, state = fetch_server_issues(repo, cfg, files)
+    if server_issues:
+        findings += server_issues
+    if hook.get("localChecks", True):
+        findings += run_local_checks(repo, files)
+    findings.sort(key=lambda x: (SEV_ORDER.get(x["severity"], 9), x["file"], x.get("line") or 0))
+    return files, findings, state
+
+
 def main():
     import argparse
     ap = argparse.ArgumentParser()
@@ -129,23 +152,15 @@ def main():
     mode = hook.get("mode", "severity")
     block_sevs = set(hook.get("blockSeverities", ["BLOCKER", "CRITICAL"]))
 
-    files = staged_files(repo)
+    files, findings, state = collect_findings(repo, cfg)
     if not files:
         return 0
-
-    findings = []
-    server_issues, state = fetch_server_issues(repo, cfg, files)
-    if server_issues:
-        findings += server_issues
-    if hook.get("localChecks", True):
-        findings += run_local_checks(repo, files)
 
     if not findings:
         print(f"{C['grn']}✔ sonar-guard: {len(files)} 个暂存文件未发现问题"
               f"{'' if state == 'ok' else ' (离线模式: ' + str(state) + ')'}{C['off']}")
         return 0
 
-    findings.sort(key=lambda x: (SEV_ORDER.get(x["severity"], 9), x["file"], x.get("line") or 0))
     if mode == "block":
         blocking = findings
     elif mode == "warn":

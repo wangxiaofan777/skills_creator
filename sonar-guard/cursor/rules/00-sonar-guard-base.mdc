@@ -16,22 +16,24 @@ alwaysApply: true
    python .sonarguard/sonar_api.py status --repo .
    ```
    若 `.sonarguard/` 不存在,提示用户从 skills_creator 运行 `install.py --repo <项目根>`;或从 skills_creator 用 `sonar-guard/scripts/sonar_api.py --repo <项目根>`。
-2. **服务器模式 (`project_state: ok`)**:
+2. **服务器模式 (`project_state: ok`)**(scan.py 默认输出 Markdown 报告并落盘 `.sonarguard/reports/`;`--format html/json` 可选):
    - 全项目(B1): `python .sonarguard/scan.py --repo . --scope full`
    - 增量/变更文件: `python .sonarguard/scan.py --repo . --scope files --files <paths>`
 3. **离线模式** (`not_found`/`no_auth`/`unreachable`): 按语言规则卡片审查,报告注明离线原因。
 4. 按变更语言加载规则卡片(Java / Python / JS·TS / Go)与「修复风险评估」卡片。
-5. 输出报告(见 workflow.md 截断规则):
+5. **叠加修复建议**:报告事实(汇总表 + issue 清单 + 截断)由 scan.py 确定性生成,不要重新生成或重新截断;你在其上补充修复建议:
 
 ```markdown
 ## Sonar 合规检查报告(模式: 服务器 / 离线)
 
-### 汇总 / 问题表
+### 汇总 / 问题表(采用 scan.py 输出)
 | # | 文件:行 | 规则 | 严重级 | 问题 | 修复风险 |
 
 ### 建议
 - 🟢 可直接修:…  🟡 修后需跑测试:…  🔴 需用户确认再动:…
 ```
+
+> 一键扫描:用户可用 `/sonar-scan [full|staged|files]` 触发上述流程并把报告显示在对话里。
 
 ## 修复执行原则
 

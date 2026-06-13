@@ -1,7 +1,25 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory\\('D:\\\\skills_creator\\\\sonar-guard\\\\sonar-guard.skill', 'D:\\\\skills_creator\\\\sonar-guard\\\\claude-code'\\) && Get-ChildItem -Recurse D:\\\\skills_creator\\\\sonar-guard\\\\claude-code | Select-Object FullName, Length)"
+      "PowerShell(Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory\\('D:\\\\skills_creator\\\\sonar-guard\\\\sonar-guard.skill', 'D:\\\\skills_creator\\\\sonar-guard\\\\claude-code'\\) && Get-ChildItem -Recurse D:\\\\skills_creator\\\\sonar-guard\\\\claude-code | Select-Object FullName, Length)",
+      "Bash(openspec status *)",
+      "Bash(openspec instructions *)",
+      "Bash(openspec validate *)",
+      "Bash(mv lib/render.py render.py)",
+      "Read(//d/d/skills_creator/sonar-guard/scripts/**)",
+      "Bash(python -c ' *)",
+      "Bash(python sonar-guard/scripts/scan.py --repo . --scope staged --format json)",
+      "Bash(python sonar-guard/scripts/scan.py --repo . --scope staged --format md)",
+      "Bash(python sonar-guard/scripts/check_staged.py --repo .)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(python sonar-guard/scripts/scan.py --repo . --scope full --format xml)",
+      "Bash(git add *)",
+      "Bash(echo \"hook_exit=$?\")",
+      "Bash(git reset *)",
+      "Bash(rm -f /d/skills_creator/.sonarguard/reports/staged-*.md && echo cleaned)",
+      "Read(//c/Windows/Fonts/**)",
+      "Bash(openspec list *)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\([c.get\\('name'\\) for c in d.get\\('changes',d if isinstance\\(d,list\\) else []\\)]\\)\")"
     ]
   }
 }

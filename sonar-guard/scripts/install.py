@@ -18,12 +18,14 @@ if str(_SCRIPT_DIR) not in sys.path:
 
 from lib.install_lib import (  # noqa: E402
     PLATFORMS,
+    ensure_gitignore_entry,
     ensure_sonarguard_json,
     install_claude_skill,
     install_codex_agents,
     install_cursor_rules,
     install_pre_commit_hook,
     install_repo_cli,
+    install_slash_command,
     print_post_install_hints,
     resolve_platforms,
     save_package_root,
@@ -55,6 +57,8 @@ def main() -> int:
         if "claude" in platforms:
             skill_dir = install_claude_skill()
             print(f"Claude Code: installed skill → {skill_dir}")
+            cmd_path = install_slash_command(repo)
+            print(f"Claude Code: installed /sonar-scan command → {cmd_path}")
 
         if "codex" in platforms:
             agents_path = install_codex_agents(repo)
@@ -71,6 +75,9 @@ def main() -> int:
 
         cli_dir = install_repo_cli(repo)
         print(f"Repo CLI: {cli_dir}")
+
+        if ensure_gitignore_entry(repo, ".sonarguard/reports/"):
+            print("已在 .gitignore 追加 .sonarguard/reports/")
 
         hook_installed = False
         if not args.no_hook and platforms & {"cursor", "claude", "codex"}:

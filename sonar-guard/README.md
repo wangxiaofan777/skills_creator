@@ -326,6 +326,20 @@ B1 前提：项目在 Sonar 上至少被 CI/扫描器分析过一次。新写、
 
 对 AI 说：「扫一下全项目的 sonar 问题」→ Agent 跑 `--scope full` 并出报告。
 
+### 输出格式与报告目录
+
+`scan.py --format md|html|json`（默认 `md`），报告由脚本确定性生成，落盘到 `<repo>/.sonarguard/reports/<scope>-<时间戳>.<ext>`：
+
+| format | 行为 |
+|--------|------|
+| `md`（默认） | 渲染 Markdown，打到 stdout（进对话框）并落盘 |
+| `html` | 渲染 HTML，落盘并自动在浏览器打开（headless 时仅打印 `file://` 路径） |
+| `json` | 透传底层 `sonar_api` 原始 JSON，供脚本 / 自动化消费 |
+
+- `--top N`：调整 MAJOR 详情上限（默认 20）。
+- 报告产物已在 install 时加入 `.gitignore`（`.sonarguard/reports/`）。
+- 一键：Claude Code 里用 `/sonar-scan [full|staged|files]` 触发扫描并把报告显示在对话框，再由 SKILL 叠加修复建议。
+
 ---
 
 ## 三平台能力（对齐后）
